@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+
+      - run: uv sync
+
+      - run: uv run ruff check .
+
+      - run: uv run ruff format --check .
+
+      - run: uv run pytest -v
+
+  breaking-changes:
+    if: "!contains(github.event.pull_request.title, '[breaking-change]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-branch
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+
+      - name: Generate schema from PR branch
+        run: |
+          uv sync
+          uv run python scripts/export_openapi.py new.json
+
+      - name: Generate schema from main branch
+        working-directory: main-branch
+        run: |
+          uv sync
+          uv run python scripts/export_openapi.py ../old.json
+
+      - name: Install oasdiff
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/Tufin/oasdiff/main/install.sh | sh
+
+      - name: Check for breaking changes
+        run: oasdiff breaking old.json new.json
