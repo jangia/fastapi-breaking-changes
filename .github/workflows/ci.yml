@@ -53,4 +53,4 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/Tufin/oasdiff/main/install.sh | sh
 
       - name: Check for breaking changes
-        run: oasdiff breaking old.json new.json --fail-on err
+        run: oasdiff breaking old.json new.json --fail-on ERR
